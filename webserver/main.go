@@ -1,13 +1,16 @@
-package server
+package main
 
 import (
 	"fmt"
+	"log"
+	"net"
 	"net/http"
 )
 
 func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintln(w, "Bienvenue sur mon serveur Go !")
+		http.ServeFile(w, r, "assets/html/index.html")
+		log.Printf("Request for route / from: %s", net.ParseIP(r.RemoteAddr))
 	})
 
 	fmt.Println("Serveur démarré sur le port 8080...")
