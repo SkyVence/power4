@@ -1,0 +1,284 @@
+<!doctype html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>Power 4 - Game</title>
+		<script src="https://cdn.tailwindcss.com"></script>
+		<script>
+			tailwind.config = {
+				theme: {
+					extend: {
+						animation: {
+							drop: "drop 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
+							"pulse-slow":
+								"pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+							"bounce-slow": "bounce 1s infinite",
+							"shake": "shake 0.5s ease-in-out",
+						},
+						keyframes: {
+							drop: {
+								"0%": {
+									transform: "translateY(-100px)",
+									opacity: "0",
+								},
+								"100%": {
+									transform: "translateY(0)",
+									opacity: "1",
+								},
+							},
+							shake: {
+								"0%, 100%": { transform: "translateX(0)" },
+								"25%": { transform: "translateX(-10px)" },
+								"75%": { transform: "translateX(10px)" },
+							},
+						},
+					},
+				},
+			};
+		</script>
+		<style>
+			.game-piece {
+				transition: all 0.3s ease-in-out;
+			}
+			.game-piece:hover {
+				transform: scale(1.1);
+			}
+			.column-hover:hover {
+				background: linear-gradient(
+					to bottom,
+					rgba(59, 130, 246, 0.1),
+					rgba(59, 130, 246, 0.05)
+				);
+			}
+			.column-form {
+				display: inline-block;
+				width: 100%;
+			}
+			.column-button {
+				background: transparent;
+				border: none;
+				padding: 0;
+				margin: 0;
+				width: 100%;
+				height: 100%;
+				cursor: pointer;
+			}
+			.inverse-gravity {
+				background: linear-gradient(180deg, #f59e0b 0%, #ef4444 100%);
+				animation: shake 0.5s ease-in-out;
+			}
+		</style>
+	</head>
+	<body
+		class="bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 min-h-screen {{if .InverseGravity}}inverse-gravity{{end}}"
+	>
+		<div class="container mx-auto px-4 py-8">
+			<!-- Header -->
+			<header class="text-center mb-8">
+				<h1 class="text-6xl font-bold text-white mb-4 tracking-wider">
+					<span
+						class="bg-gradient-to-r from-yellow-400 to-red-500 bg-clip-text text-transparent"
+					>
+						POWER 4
+					</span>
+				</h1>
+				{{if .InverseGravity}}
+				<div class="bg-yellow-500/20 backdrop-blur-sm rounded-lg p-3 inline-block border-2 border-yellow-400 mb-4">
+					<p class="text-yellow-300 font-bold text-lg animate-pulse">
+						⚠️ INVERSE GRAVITY ACTIVE! Pieces fall from bottom to top!
+					</p>
+				</div>
+				{{else}}
+				<p class="text-xl text-blue-200 mb-6">
+					Connect four pieces to win!
+				</p>
+				{{end}}
+			</header>
+
+			<!-- Game Stats -->
+			<div class="flex justify-center mb-8">
+				<div
+					class="bg-white/10 backdrop-blur-sm rounded-2xl p-6 shadow-2xl border border-white/20"
+				>
+					<div class="flex items-center space-x-8">
+						<!-- Player 1 -->
+						<div class="text-center">
+							<div class="flex items-center justify-center mb-2">
+								<div
+									class="w-6 h-6 bg-red-500 rounded-full mr-3 shadow-lg"
+								></div>
+								<span class="text-white font-semibold text-lg"
+									>{{.Player1Name}}</span
+								>
+							</div>
+							<div class="text-2xl font-bold text-white">
+								{{.Player1Score}}
+							</div>
+						</div>
+
+						<!-- Current Turn -->
+						<div class="text-center px-6">
+							<div class="text-white/80 text-sm mb-2">
+								Current Turn
+							</div>
+							<div class="flex items-center justify-center">
+								{{if eq .CurrentPlayer 1}}
+								<div
+									class="w-8 h-8 bg-red-500 rounded-full animate-pulse-slow shadow-lg"
+								></div>
+								{{else}}
+								<div
+									class="w-8 h-8 bg-yellow-400 rounded-full animate-pulse-slow shadow-lg"
+								></div>
+								{{end}}
+							</div>
+							<div class="text-white/70 text-xs mt-2">
+								Turn {{.TurnCount}}
+							</div>
+						</div>
+
+						<!-- Player 2 -->
+						<div class="text-center">
+							<div class="flex items-center justify-center mb-2">
+								<div
+									class="w-6 h-6 bg-yellow-400 rounded-full mr-3 shadow-lg"
+								></div>
+								<span class="text-white font-semibold text-lg"
+									>{{.Player2Name}}</span
+								>
+							</div>
+							<div class="text-2xl font-bold text-white">
+								{{.Player2Score}}
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<!-- Game Board -->
+			<div class="flex justify-center mb-8">
+				<div
+					class="bg-blue-600 p-6 rounded-3xl shadow-2xl border-4 border-blue-500 {{if .InverseGravity}}border-yellow-400{{end}}"
+				>
+					<div class="grid gap-3" style="grid-template-columns: repeat({{.Columns}}, minmax(0, 1fr));">
+						{{range $colIndex := .ColumnIndices}}
+						<div
+							class="column-hover rounded-2xl p-2 transition-all duration-200"
+						>
+							<form
+								method="POST"
+								action="/bonus/move"
+								class="column-form"
+							>
+								<input
+									type="hidden"
+									name="column"
+									value="{{$colIndex}}"
+								/>
+								<button
+									type="submit"
+									class="column-button {{if $.GameOver}}cursor-not-allowed{{end}}"
+									{{if
+									$.GameOver}}disabled{{end}}
+								>
+									<div class="space-y-3">
+										{{range $rowIndex := $.RowIndices}}
+										{{$cellValue := index (index $.Board
+										$rowIndex) $colIndex}}
+										<div
+											class="w-16 h-16 rounded-full shadow-inner game-piece
+                                        {{if eq $cellValue 0}}bg-white
+                                        {{else if eq $cellValue 1}}bg-red-500 animate-drop
+                                        {{else if eq $cellValue 2}}bg-yellow-400 animate-drop
+                                        {{end}}"
+											data-row="{{$rowIndex}}"
+											data-col="{{$colIndex}}"
+										></div>
+										{{end}}
+									</div>
+								</button>
+							</form>
+						</div>
+						{{end}}
+					</div>
+				</div>
+			</div>
+
+			<!-- Game Controls -->
+			<div class="flex justify-center space-x-4 flex-wrap gap-4">
+				<form method="POST" action="/bonus/new-game" class="inline">
+					<button
+						type="submit"
+						class="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg"
+					>
+						Rematch
+					</button>
+				</form>
+				<form method="POST" action="/bonus/reset-scores" class="inline">
+					<button
+						type="submit"
+						class="bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg"
+					>
+						Reset Scores
+					</button>
+				</form>
+				<a
+					href="/bonus/setup"
+					class="bg-gradient-to-r from-purple-500 to-pink-600 hover:from-purple-600 hover:to-pink-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg inline-block text-center"
+				>
+					New Setup
+				</a>
+			</div>
+
+			<!-- Game Status Modal -->
+			{{if .ShowModal}}
+			<div
+				class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
+			>
+				<div
+					class="bg-white rounded-3xl p-8 mx-4 max-w-md w-full shadow-2xl transform transition-all duration-300"
+				>
+					<div class="text-center">
+						<div class="text-6xl mb-4">
+							{{if .GameWon}}🎉 {{else if .GameDraw}}🤝 {{end}}
+						</div>
+						<h2 class="text-3xl font-bold text-gray-800 mb-4">
+							{{if .GameWon}}
+								{{if eq .Winner 1}}{{.Player1Name}}{{else}}{{.Player2Name}}{{end}} Wins!
+							{{else if .GameDraw}}
+								It's a Draw!
+							{{end}}
+						</h2>
+						<p class="text-gray-600 mb-6">
+							{{if .GameWon}}
+								Congratulations! You got four in a row!
+							{{else if .GameDraw}}
+								The board is full! Well played both players!
+							{{end}}
+						</p>
+						<form method="POST" action="/bonus/new-game" class="inline">
+							<button
+								type="submit"
+								class="bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white font-bold py-3 px-8 rounded-full transition-all duration-200 transform hover:scale-105 shadow-lg"
+							>
+								Play Again
+							</button>
+						</form>
+					</div>
+				</div>
+			</div>
+			{{end}}
+
+			<!-- Game Status Message -->
+			{{if .Message}}
+			<div
+				class="fixed bottom-4 right-4 bg-white/90 backdrop-blur-sm rounded-lg p-4 shadow-lg border border-white/20 max-w-md"
+			>
+				<p class="text-gray-800 font-semibold">{{.Message}}</p>
+			</div>
+			{{end}}
+		</div>
+	</body>
+</html>
+
