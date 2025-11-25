@@ -1,4 +1,4 @@
-package main
+package shared
 
 import (
 	"log"
@@ -10,7 +10,7 @@ type Route struct {
 	Method     string
 	Path       string
 	Handler    http.HandlerFunc
-	Middleware func(http.Handler) http.Handler // optional
+	Middleware func(http.Handler) http.Handler
 }
 
 // statusWriter captures HTTP status codes for logging
@@ -75,32 +75,13 @@ func RegisterRoute(mux *http.ServeMux, routes []Route) {
 	}
 }
 
-func main() {
+func StartServer(routes []Route, addr string) {
 	mux := http.NewServeMux()
 
-	// // Example: with per-route middleware (e.g., simple header)
-	// authMiddleware := func(next http.Handler) http.Handler {
-	// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-	// 		// example: add a header or check auth here
-	// 		w.Header().Set("X-Example", "per-route-middleware")
-	// 		next.ServeHTTP(w, r)
-	// 	})
-	// }
+	RegisterRoute(mux, routes)
 
-	RegisterRoute(mux, []Route{
-
-		{
-			Method: http.MethodGet,
-
-			Path: "/",
-
-			Handler: func(w http.ResponseWriter, r *http.Request) { http.ServeFile(w, r, "assets/html/index.html") },
-		},
-	})
-
-	// Wrap the entire mux with the global request logger
 	handler := requestLogger(mux)
 
-	log.Println("Listening on :8080")
-	log.Fatal(http.ListenAndServe("127.0.0.1:8080", handler))
+	log.Println("Listening on :", addr)
+	log.Fatal(http.ListenAndServe(addr, handler))
 }
