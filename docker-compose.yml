@@ -1,0 +1,13 @@
+networks:
+  caddy:
+    external: true # Uncomment this in prod environment
+    name: caddy_network
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    container_name: secret-power4
+    ports:
+      - "8080:8080"
+    networks:
+      - caddy
