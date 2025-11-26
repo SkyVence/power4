@@ -1,27 +1,12 @@
-# syntax=docker/dockerfile:1
-
-FROM golang:1.25.4
-
-# Set destination for COPY
+FROM golang:1.23-alpine AS builder
 WORKDIR /app
-
-# Download Go modules
 COPY go.mod ./
-# RUN go mod download
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-w -s" -o app .
 
-# Copy the source code. Note the slash at the end, as explained in
-# https://docs.docker.com/reference/dockerfile/#copy
-COPY . ./
-
-# Build
-RUN CGO_ENABLED=0 GOOS=linux go build -o /docker-power4
-
-# Optional:
-# To bind to a TCP port, runtime parameters must be supplied to the docker command.
-# But we can document in the Dockerfile what ports
-# the application is going to listen on by default.
-# https://docs.docker.com/reference/dockerfile/#expose
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+COPY --from=builder /app/app /app
 EXPOSE 8080
-
-# Run
-CMD ["/docker-power4"]
+ENTRYPOINT ["/app"]

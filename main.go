@@ -75,5 +75,5 @@ var routes = []shared.Route{
 
 func main() {
 
-	shared.StartServer(routes, "127.0.0.1:8080")
+	shared.StartServer(routes, "0.0.0.0:8080")
 }
