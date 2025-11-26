@@ -7,6 +7,9 @@ Un jeu Connect Four basé sur le web construit avec Go, proposant le rendu côt�
 - **Version Go** : `1.25.4`
 - **Dernière version** : `v1.0.0`
 
+## Preview
+https://secret.osadeo.com
+
 ## Rendu côté serveur (Server-Side Rendering)
 
 Ce projet utilise la bibliothèque standard de Go pour le rendu côté serveur :
@@ -88,4 +91,3 @@ power4/
   - `net/http` - Serveur HTTP et routage
   - `html/template` - Rendu de modèles côté serveur
 - **Frontend** : HTML5 avec Tailwind CSS (via CDN)
-
